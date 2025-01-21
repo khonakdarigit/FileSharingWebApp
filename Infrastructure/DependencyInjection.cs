@@ -8,6 +8,9 @@ using Infrastructure.Data;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Application.Interface;
+using Application.Services;
+using Infrastructure.Services;
 
 namespace Infrastructure
 {
@@ -31,6 +34,9 @@ namespace Infrastructure
 
             services.AddDatabaseDeveloperPageExceptionFilter();
 
+            services.AddScoped<IIdentityService, IdentityService>();
+            services.AddScoped<IUser, CurrentUser>();
+
             return services;
         }
 
@@ -38,7 +44,12 @@ namespace Infrastructure
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
         {
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            services.AddScoped<IUserFileRepository, UserFileRepository>();
+            services.AddScoped<IFileShareRepository, FileShareRepository>();
+
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            services.AddScoped<IUserFileService, UserFileService>();
 
             return services;
         }

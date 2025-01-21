@@ -1,8 +1,252 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@using Application.DTOs
+@using Application.Interface
+@inject IUser user;
+@{
+    ViewData["Title"] = "File Manager";
+    int fileIndex = 0;
+    int shareFileIndex = 0;
+
+    var MyAccess = ViewBag.AllFileShareWithMe as List<AccessFileDto> ?? new List<AccessFileDto>();
+
+    List<string> directories = ViewBag.directories as List<string>;
+    List<string> lstCurrentPath = (ViewBag.CurrentPath as string).Split(@"\").ToList();
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
+    <h1 class="display-4">File Sharing</h1>
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
 </div>
+
+@if (user.Id.Any())
+{
+
+    <input id="CurrentPath" name="CurrentPath" value="@ViewBag.CurrentPath" hidden />
+
+    <h1>مدیریت فایل ها</h1>
+    <hr />
+    <div class="col-md-7">
+        <h3 style="text-align:center">آپلود فایل</h3>
+        <p>
+            <span>* قبل از آپلود و اشتراک گزاری نام مناسب برای فایل انتخاب کنید تا برای دیگران قابل تشخیص باشد.</span>
+            <br />
+            <span>* نام فایل نباید بیشتر از ۳۰ کاراکتر باشد.</span>
+        </p>
+        <input type="file"
+               class="filepond"
+               name="filepond"
+               multiple
+               data-allow-reorder="true"
+               data-max-file-size="5MB"
+               data-max-files="3">
+        <hr />
+
+        <h3 style="padding: 10px 0px;background-color: #d0ffd9;text-align: center;border-radius: 10px;">فایل های شما</h3>
+        <div>
+            <a class="btn btn-default" asp-controller="FileManagement" asp-action="NewFolder"
+               asp-route-CurrentPath="@ViewBag.CurrentPath"
+               data-toggle="modal" data-target="#modal_NewFolder">
+                <i class="icon-plus2"></i>
+                <span>پوشه جدید</span>
+            </a>
+        </div>
+        <div style="margin: 16px 0px 0px;">
+            @{
+                int PathIndex = 0;
+            }
+            <span style="background: #f3f0f052;padding: 5px 5px;margin: 5px 0px;border-radius: 9px;">
+                مسیر جاری:
+                @foreach (var item in lstCurrentPath)
+                {
+                    PathIndex++;
+                    var CurrentPath = !string.IsNullOrEmpty(item) ? $"{string.Join("\\", lstCurrentPath.Take(PathIndex))}" : "";
+
+                    <span style="unicode-bidi: isolate;direction:rtl">
+                        /
+                        <a asp-action="Index" asp-route-CurrentPath="@CurrentPath">
+                            @(PathIndex == 1 ? "خانه" : item)
+                        </a>
+                    </span>
+
+
+                }
+            </span>
+
+        </div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th></th>
+
+                        <th>
+                            فایل
+                        </th>
+
+                        <th>
+
+                            اشتراک گذاری شده با
+                        </th>
+
+
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in directories)
+                    {
+                        <tr>
+                            <td>
+                                <i class="icon-folder-open"></i>
+                            </td>
+                            <td>
+                                <a asp-action="Index" asp-route-CurrentPath="@($"{ViewBag.CurrentPath}\\{item}")">
+                                    @item
+                                </a>
+                            </td>
+                            <td>
+                            </td>
+                            <td>
+                                <div style="text-align:center">
+                                    <a class="btn btn-default" asp-controller="FileManagement" asp-action="DeleteFolder"
+                                       asp-route-FolderName="@item"
+                                       asp-route-CurrentPath="@ViewBag.CurrentPath">
+                                        <span>حذف پوشه</span>
+                                    </a>
+                                </div>
+
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <i class="icon-file-text2"></i>
+                            </td>
+                            <td>
+                                <a asp-action="DownloadFile" asp-route-Id="@item.Id">
+                                    @Html.DisplayFor(modelItem => item.)
+                                </a>
+                            </td>
+                            <td>
+
+
+                                @if (item.ShareWithAll)
+                                {
+                                    <span>همه</span>
+                                }
+                                else if (item.FilesShare.Any())
+                                {
+                                    <span>@($"{(item.FilesShare.Count.ToString())} نفر")</span>
+                                }
+                                else
+                                {
+                                    <span>هیچ کس</span>
+                                }
+
+                            </td>
+                            <td>
+                                <div style="text-align:center">
+                                    <a class="btn btn-default" asp-controller="FileManagement" asp-action="Details"
+                                       data-toggle="modal" data-target="#modal-action"
+                                       asp-route-FileId="@item.Id" data-fileid="@item.Id">
+                                        <span>جزئیات</span>
+                                    </a>
+                                </div>
+
+                            </td>
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+    <div class="col-md-5">
+        <h3 style="padding: 10px 0px;background-color: #c1ebff;text-align: center;border-radius: 10px;">
+            فایلهای اشترک گذاری شده با شما
+        </h3>
+        <div class="table-responsive">
+            <table class="table">
+                @*   <thead>
+            <tr>
+            <th>
+
+            </th>
+            <th>
+
+            </th>
+            <th>
+
+            </th>
+            <th></th>
+            </tr>
+            </thead> *@
+                <tbody>
+                    @foreach (var item in MyAccess)
+                    {
+                        <tr>
+                            <td>
+                                @(++shareFileIndex)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.FileName)
+                                <br />
+                                <span style="font-size: 12px;color: #919191;">@($"{item.UserName}")</span>
+                            </td>
+                            <td>
+                            </td>
+                            <td>
+                                <div style="text-align:center">
+                                    <a class="btn btn-success" asp-controller="FileManagement" asp-action="DownloadFile"
+                                       asp-route-Id="@item.UserFileId">
+                                        <span>دانلود</span>
+                                    </a>
+                                </div>
+
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+
+    </div>
+
+    @section Scripts {
+
+    <script>
+
+        const pond = FilePond.create(document.querySelector('.filepond'), {
+            server: {
+                url: '/Home',
+                process: {
+                    url: '/UploadFile',
+                    method: 'POST',
+                    headers: {
+                    },
+                    ondata: (formData) => {
+                        const currentPath = document.getElementById('CurrentPath').value;
+                        formData.append('CurrentPath', currentPath);
+                        return formData;
+                    }
+                }
+            }
+        });
+
+        pond.on('processfile', (error, file) => {
+            if (!error) {
+                window.location.reload();
+            } else {
+                console.error('Error uploading file:', error);
+            }
+        });
+
+    </script>
+    }
+
+}
+
