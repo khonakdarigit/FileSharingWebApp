@@ -1,6 +1,10 @@
 ﻿@using Application.DTOs
 @using Application.Interface
+@using Domain.Entities
+@using Microsoft.AspNetCore.Identity
+@model IEnumerable<Application.DTOs.UserFileDto>
 @inject IUser user;
+@inject UserManager<ApplicationUser> _userManager;
 @{
     ViewData["Title"] = "File Manager";
     int fileIndex = 0;
@@ -8,215 +12,309 @@
 
     var MyAccess = ViewBag.AllFileShareWithMe as List<AccessFileDto> ?? new List<AccessFileDto>();
 
-    List<string> directories = ViewBag.directories as List<string>;
-    List<string> lstCurrentPath = (ViewBag.CurrentPath as string).Split(@"\").ToList();
+    List<string> directories = ViewBag.directories as List<string> ?? new List<string>();
+    List<string> lstCurrentPath = ((ViewBag.CurrentPath as string) ?? "").Split(@"\").ToList();
 }
 
 <div class="text-center">
     <h1 class="display-4">File Sharing</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <p>Management file and sharing</p>
 </div>
 
-@if (user.Id.Any())
+@if (User.Identity.IsAuthenticated)
 {
 
     <input id="CurrentPath" name="CurrentPath" value="@ViewBag.CurrentPath" hidden />
 
-    <h1>مدیریت فایل ها</h1>
+    <h1></h1>
     <hr />
-    <div class="col-md-7">
-        <h3 style="text-align:center">آپلود فایل</h3>
-        <p>
-            <span>* قبل از آپلود و اشتراک گزاری نام مناسب برای فایل انتخاب کنید تا برای دیگران قابل تشخیص باشد.</span>
-            <br />
-            <span>* نام فایل نباید بیشتر از ۳۰ کاراکتر باشد.</span>
-        </p>
-        <input type="file"
-               class="filepond"
-               name="filepond"
-               multiple
-               data-allow-reorder="true"
-               data-max-file-size="5MB"
-               data-max-files="3">
-        <hr />
+    <div class="row">
 
-        <h3 style="padding: 10px 0px;background-color: #d0ffd9;text-align: center;border-radius: 10px;">فایل های شما</h3>
-        <div>
-            <a class="btn btn-default" asp-controller="FileManagement" asp-action="NewFolder"
-               asp-route-CurrentPath="@ViewBag.CurrentPath"
-               data-toggle="modal" data-target="#modal_NewFolder">
-                <i class="icon-plus2"></i>
-                <span>پوشه جدید</span>
-            </a>
-        </div>
-        <div style="margin: 16px 0px 0px;">
-            @{
-                int PathIndex = 0;
-            }
-            <span style="background: #f3f0f052;padding: 5px 5px;margin: 5px 0px;border-radius: 9px;">
-                مسیر جاری:
-                @foreach (var item in lstCurrentPath)
-                {
-                    PathIndex++;
-                    var CurrentPath = !string.IsNullOrEmpty(item) ? $"{string.Join("\\", lstCurrentPath.Take(PathIndex))}" : "";
+        <div class="col-md-7">
+            <h3 style="text-align:center" class="display-6">Upload File</h3>
+            <p>
+                <span>* File name should not be longer than 30 characters.</span>
+            </p>
+            <input type="file"
+                   class="filepond"
+                   name="filepond"
+                   multiple
+                   data-allow-reorder="true"
+                   data-max-file-size="5MB"
+                   data-max-files="3">
+            <hr />
+            <div style="padding:0 10px">
+                <h3 class="display-6" style="padding: 10px 0px;background-color: #d0ffd9;text-align: center;border-radius: 10px;font-size: 24px;">Your files</h3>
+                <div>
+                    <!-- Button trigger modal -->
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newFolderModal">
+                        <i class="bi bi-folder-plus"></i>
+                        New
+                    </button>
 
-                    <span style="unicode-bidi: isolate;direction:rtl">
-                        /
-                        <a asp-action="Index" asp-route-CurrentPath="@CurrentPath">
-                            @(PathIndex == 1 ? "خانه" : item)
-                        </a>
+                    <!-- Modal -->
+                    <div class="modal fade" id="newFolderModal" tabindex="-1" aria-labelledby="newFolderModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLabel">Create new folder</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form asp-action="NewFolder" method="post" enctype="multipart/form-data">
+
+                                    <div class="modal-body">
+
+                                        <input id="CurrentPath" name="CurrentPath" value="@ViewBag.CurrentPath" hidden />
+
+
+                                        <div class="form-horizontal">
+                                            <!--firstName-->
+                                            <div class="form-group">
+                                                <label for="FolderName" class="control-label col-md-3 col-xs-12">Folder name:</label>
+                                                <div class="col-md-9 col-xs-12">
+                                                    <input id="FolderName" name="FolderName" type="text" class="form-control" placeholder="Enter folder name" autocomplete="off" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        <button type="submit" class="btn btn-primary">Create</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div style="margin: 16px 0px 0px;">
+                    @{
+                        int PathIndex = 0;
+                    }
+                    <span style="background: #f3f0f052;padding: 5px 5px;margin: 5px 0px;border-radius: 9px;">
+                        Current path:
+                        @foreach (var item in lstCurrentPath)
+                        {
+                            PathIndex++;
+                            var CurrentPath = !string.IsNullOrEmpty(item) ? $"{string.Join("\\", lstCurrentPath.Take(PathIndex))}" : "";
+
+                            <span style="unicode-bidi: isolate;direction:rtl">
+                                /
+                                <a asp-action="Index" asp-route-CurrentPath="@CurrentPath">
+                                    @(PathIndex == 1 ? "Home" : item)
+                                </a>
+                            </span>
+
+
+                        }
                     </span>
 
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th></th>
 
-                }
-            </span>
+                                <th>
+                                    File
+                                </th>
+
+                                <th>
+                                    Share with
+                                </th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in directories)
+                            {
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-folder"></i>
+                                    </td>
+                                    <td>
+                                        <a asp-action="Index" asp-route-CurrentPath="@($"{ViewBag.CurrentPath}\\{item}")">
+                                            @item
+                                        </a>
+                                    </td>
+                                    <td>
+                                    </td>
+                                    <td>
+                                        <div style="text-align:center">
+                                            <a class="btn btn-default" asp-controller="FileManagement" asp-action="DeleteFolder"
+                                               asp-route-FolderName="@item"
+                                               asp-route-CurrentPath="@ViewBag.CurrentPath">
+                                                <i class="bi bi-folder-x"></i>
+                                            </a>
+                                        </div>
+
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-file"></i>
+                                    </td>
+                                    <td>
+                                        <a asp-action="DownloadFile" asp-route-Id="@item.Id">
+                                            @Html.DisplayFor(modelItem => item.Name)
+                                        </a>
+                                    </td>
+                                    <td>
+                                        @if (item.IsPublic)
+                                        {
+                                            <span>All</span>
+                                        }
+                                        else if (item.SharedWithUsers.Any())
+                                        {
+                                            <span>@($"{(item.SharedWithUsers.Count.ToString())} People")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Nobody</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div>
+                                            @{
+                                                var modalId = $"fileDetails_{@item.Id}";
+                                                var inputFieldId = $"emailInput_{@item.Id}";
+                                                var isPublicId = $"isPublic_{@item.Id}";
+
+                                            }
+
+                                            <!-- Example split danger button -->
+                                            <div class="btn-group" style="text-align:center">
+                                                <a class="btn" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <span>...</span>
+                                                </a>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#@modalId">Share</a></li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li><a class="dropdown-item" href="#" style="color:red">Remove</a></li>
+                                                </ul>
+                                            </div>
+
+                                            <!-- Modal -->
+                                            <div class="modal fade" id="@modalId" tabindex="-1" aria-labelledby="@($"{modalId}Label")" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h1 class="modal-title fs-5" id="@($"{modalId}Label")">Share @($"\"{item.Name}\"")</h1>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <form asp-action="Share" method="post">
+
+                                                            <input id="FileId" name="FileId" value="@item.Id" hidden />
+                                                            <input type="hidden" name="CurrentPath" value="@ViewBag.CurrentPath" />
+
+
+                                                            <div class="modal-body">
+
+                                                                <input type="email" class="form-control email-input" id="@inputFieldId" placeholder="Add people with email address ..." aria-describedby="emailHelp">
+                                                                <ul id="emailSuggestions_@inputFieldId" class="list-group mt-2" style="display: none;">
+                                                                    <!-- نتایج جستجو اینجا نمایش داده می‌شوند -->
+                                                                </ul>
+                                                                <hr />
+                                                                <div>
+                                                                    <h6>
+                                                                        People with access
+                                                                    </h6>
+                                                                    @foreach (var itemx in item.SharedWithUsers)
+                                                                    {
+                                                                        <p>
+                                                                            @itemx.SharedWithUser.Email
+                                                                            <button class="btn" onclick="">
+                                                                                <i class="bi bi-person-dash"></i>
+                                                                            </button>
+                                                                        </p>
+                                                                    }
+                                                                    <hr />
+                                                                </div>
+                                                                <div>
+                                                                    <h6>
+                                                                        General access
+                                                                    </h6>
+
+                                                                    <div class="form-check form-switch">
+                                                                        <input class="form-check-input" type="checkbox" role="switch" id="IsPublic_@item.Id" @(item.IsPublic ? "checked" : "")>
+                                                                        <label class="form-check-label" for="IsPublic">Share with all user</label>
+                                                                    </div>
+
+
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" onclick="doneShare('@item.Id')" class="btn btn-primary">Done</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                    </td>
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            </div>
 
         </div>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th></th>
+        <div class="col-md-5">
+            <h3 class="display-6" style="padding: 10px 0px;background-color: #c1ebff;text-align: center;border-radius: 10px;font-size: 24px;">
+                Other user sharing with you
+            </h3>
+            <div class="table-responsive">
+                <table class="table">
+                    <tbody>
+                        @foreach (var item in MyAccess)
+                        {
+                            <tr>
+                                <td>
+                                    @(++shareFileIndex)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.FileName)
+                                    <br />
+                                    <span style="font-size: 12px;color: #919191;">@($"{item.UserName}")</span>
+                                </td>
+                                <td>
+                                </td>
+                                <td>
+                                    <div style="text-align:center">
+                                        <a class="btn btn-success" asp-controller="FileManagement" asp-action="DownloadFile"
+                                           asp-route-Id="@item.UserFileId">
+                                            <span>Download</span>
+                                        </a>
+                                    </div>
 
-                        <th>
-                            فایل
-                        </th>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
 
-                        <th>
-
-                            اشتراک گذاری شده با
-                        </th>
-
-
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in directories)
-                    {
-                        <tr>
-                            <td>
-                                <i class="icon-folder-open"></i>
-                            </td>
-                            <td>
-                                <a asp-action="Index" asp-route-CurrentPath="@($"{ViewBag.CurrentPath}\\{item}")">
-                                    @item
-                                </a>
-                            </td>
-                            <td>
-                            </td>
-                            <td>
-                                <div style="text-align:center">
-                                    <a class="btn btn-default" asp-controller="FileManagement" asp-action="DeleteFolder"
-                                       asp-route-FolderName="@item"
-                                       asp-route-CurrentPath="@ViewBag.CurrentPath">
-                                        <span>حذف پوشه</span>
-                                    </a>
-                                </div>
-
-                            </td>
-                        </tr>
-                    }
-                    @foreach (var item in Model)
-                    {
-                        <tr>
-                            <td>
-                                <i class="icon-file-text2"></i>
-                            </td>
-                            <td>
-                                <a asp-action="DownloadFile" asp-route-Id="@item.Id">
-                                    @Html.DisplayFor(modelItem => item.)
-                                </a>
-                            </td>
-                            <td>
-
-
-                                @if (item.ShareWithAll)
-                                {
-                                    <span>همه</span>
-                                }
-                                else if (item.FilesShare.Any())
-                                {
-                                    <span>@($"{(item.FilesShare.Count.ToString())} نفر")</span>
-                                }
-                                else
-                                {
-                                    <span>هیچ کس</span>
-                                }
-
-                            </td>
-                            <td>
-                                <div style="text-align:center">
-                                    <a class="btn btn-default" asp-controller="FileManagement" asp-action="Details"
-                                       data-toggle="modal" data-target="#modal-action"
-                                       asp-route-FileId="@item.Id" data-fileid="@item.Id">
-                                        <span>جزئیات</span>
-                                    </a>
-                                </div>
-
-                            </td>
-                        </tr>
-                    }
-
-                </tbody>
-
-            </table>
 
         </div>
     </div>
-    <div class="col-md-5">
-        <h3 style="padding: 10px 0px;background-color: #c1ebff;text-align: center;border-radius: 10px;">
-            فایلهای اشترک گذاری شده با شما
-        </h3>
-        <div class="table-responsive">
-            <table class="table">
-                @*   <thead>
-            <tr>
-            <th>
-
-            </th>
-            <th>
-
-            </th>
-            <th>
-
-            </th>
-            <th></th>
-            </tr>
-            </thead> *@
-                <tbody>
-                    @foreach (var item in MyAccess)
-                    {
-                        <tr>
-                            <td>
-                                @(++shareFileIndex)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(modelItem => item.FileName)
-                                <br />
-                                <span style="font-size: 12px;color: #919191;">@($"{item.UserName}")</span>
-                            </td>
-                            <td>
-                            </td>
-                            <td>
-                                <div style="text-align:center">
-                                    <a class="btn btn-success" asp-controller="FileManagement" asp-action="DownloadFile"
-                                       asp-route-Id="@item.UserFileId">
-                                        <span>دانلود</span>
-                                    </a>
-                                </div>
-
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
 
 
-    </div>
 
-    @section Scripts {
+
+}
+
+
+@section Scripts {
 
     <script>
 
@@ -246,7 +344,82 @@
         });
 
     </script>
-    }
+
+    <script>
+        $(document).ready(function () {
+
+            $(document).on('input', '.email-input', function () {
+                const input = $(this);
+                const inputId = input.attr('id');
+                const query = input.val();
+                const suggestions = $(`#emailSuggestions_${this.id}`);
+
+                suggestions.empty();
+
+                if (query.length === 0) {
+                    suggestions.hide();
+                    return;
+                }
+
+                $.ajax({
+                    url: `/Home/Search?query=${query}`,
+                    type: 'GET',
+                    success: function (data) {
+                        suggestions.show();
+                        data.forEach(email => {
+                            suggestions.append(`<li class="list-group-item suggestion-item" data-input=${inputId}>${email}</li>`);
+                        });
+                    },
+                    error: function () {
+                        suggestions.show();
+                        suggestions.append('<li class="list-group-item text-danger">User not found!</li>');
+                    }
+                });
+            });
+
+            $(document).on('click', '.suggestion-item', function () {
+                const selectedEmail = $(this).text();
+                const inputId = $(this).data('input');
+                const input = $(`#${inputId}`);
+                input.val(selectedEmail);
+
+                $(`#emailSuggestions_${inputId}`).hide();
+            });
+        });
+
+
+        function doneShare(itemId) {
+
+            alert(itemId);
+            var shareWithAll = document.querySelector(`#IsPublic_${itemId}`).checked;
+            const emailInput = $(`#emailInput_${itemId}`);
+
+            alert(shareWithAll);
+
+            $.ajax({
+                type: "Post",
+                url: '@Url.Action("Share", "Home")',
+                data: {
+                    'FileId': itemId,
+                    'Email': emailInput.val(),
+                    'IsPublic': shareWithAll,
+                    'CurrentPath': '@ViewBag.CurrentPath'
+                }
+            }).done(function (result) {
+
+                if (result.status == 'ok') {
+                    window.location.reload();
+                }
+
+            });
+
+        }
+
+
+
+    </script>
+
+
 
 }
 

@@ -14,12 +14,8 @@ namespace Application.DTOs
         public string FilePath { get; set; } = string.Empty;
         public long Size { get; set; }
         public string ContentType { get; set; } = string.Empty;
-
         public string UploadedById { get; set; }
-        public ApplicationUser UploadedBy { get; set; }
-
-        public bool IsPublic { get; set; } = false;
-
-        public ICollection<FileShareDto> SharedWithUsers { get; set; } = new List<FileShareDto>();
+        public bool IsPublic { get; set; }
+        public List<FileShareDto> SharedWithUsers { get; set; } = new List<FileShareDto>();
     }
 }

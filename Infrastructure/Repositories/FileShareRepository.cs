@@ -12,12 +12,19 @@ namespace Infrastructure.Repositories
         {
         }
 
+
         public async Task<IEnumerable<FileShare>> AllFileShareWithMe(string userId)
         {
             return await GetAllAsync(
                 filter: c => (c.SharedWithUserId == userId || c.UserFile.IsPublic) && c.UserFile.UploadedById != userId,
                 include: c => c.Include(c => c.UserFile).ThenInclude(c => c.UploadedBy)
                 );
+        }
+
+        public async Task NewFileShare(FileShare fileShare)
+        {
+            await AddAsync(fileShare);
+           await SaveChangesAsync();
         }
     }
 }

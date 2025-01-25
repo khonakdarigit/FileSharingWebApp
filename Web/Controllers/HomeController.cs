@@ -1,9 +1,13 @@
 ﻿using Application.DTOs;
 using Application.Interface;
+using Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using NuGet.Packaging.Signing;
 using System.Diagnostics;
 using Web.Models;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Web.Controllers
 {
@@ -11,25 +15,50 @@ namespace Web.Controllers
     {
         private readonly string _path = "C:\\FileManagementSystem\\";
 
+        private readonly UserManager<ApplicationUser> _userManager;
+
         private readonly IUser _user;
         private readonly ILogger<HomeController> _logger;
         private readonly IUserFileService _userFile;
+        private readonly IFileShareService _fileShare;
 
         public HomeController(
             ILogger<HomeController> logger,
             IUserFileService userFile,
-            IUser user)
+            IFileShareService fileShare,
+            IUser user,
+            UserManager<ApplicationUser> userManager)
         {
             _logger = logger;
             _userFile = userFile;
             _user = user;
+            _userManager = userManager;
+            _fileShare = fileShare;
         }
         private string GetUserFilesPath(string userId)
         {
             var _filePath = Path.Combine($"{_path}{userId}");
             return _filePath;
         }
-        public IActionResult Index(string CurrentPath = "")
+
+        public async Task<IActionResult> Search(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return Ok(new List<string>());
+
+            var users = _userManager.Users
+                .Where(user => user.Email.Contains(query))
+                .Select(user => user.Email)
+                .ToList();
+
+
+            if (!users.Any())
+                return NotFound("user not found!");
+
+            return Ok(users);
+        }
+
+        public async Task<IActionResult> Index(string CurrentPath = "")
         {
             if (User.Identity.IsAuthenticated)
             {
@@ -58,8 +87,11 @@ namespace Web.Controllers
                 ViewBag.directories = FolderNames;
 
 
-                var list = _userFile.GetUserFileWithDetailsByUserId(_user.Id);
-                ViewBag.AllFileShareWithMe = _userFile.AllFileShareWithMe(_user.Id);
+                var list = await _userFile.GetUserFileWithDetailsByUserId(_user.Id);
+
+                list = list.Where(c => (string.IsNullOrEmpty(c.FilePath) && string.IsNullOrWhiteSpace(CurrentPath)) || c.FilePath == CurrentPath).OrderByDescending(c => c.Id);
+
+                ViewBag.AllFileShareWithMe = await _userFile.AllFileShareWithMe(_user.Id);
 
                 return View(list);
             }
@@ -98,15 +130,97 @@ namespace Web.Controllers
                 await file.CopyToAsync(stream);
             }
 
-            await _userFile.AddAsync(new UserFileDto()
+            await _userFile.NewAsync(new UserFileDto()
             {
                 UploadedById = _user.Id,
                 Name = file.FileName,
                 FilePath = CurrentPath,
-                Size=file.Length,
+                Size = file.Length,
             });
 
             return Ok(new { Message = "فایل با موفقیت آپلود شد." });
+        }
+
+        [HttpPost]
+        public IActionResult NewFolder(FolderNameDto model, string? CurrentPath)
+        {
+            if (ModelState.IsValid)
+            {
+                var uploadsPath = $"{GetUserFilesPath(_user.Id)}" +
+                    $"{(
+                        (CurrentPath != null && CurrentPath.Any()) ?
+                        $"\\{CurrentPath}\\" :
+                        "")}" +
+                    $"\\{model.FolderName}";
+
+                if (!Directory.Exists(uploadsPath))
+                    Directory.CreateDirectory(uploadsPath);
+
+                return RedirectToAction(nameof(Index), new { CurrentPath = CurrentPath });
+            }
+            return View(model);
+        }
+        public async Task<IActionResult> DownloadFile(Guid Id)
+        {
+            //UserFile userFile = new UserFile();
+
+            var userFile = await _userFile.GetFileWithDetails(Id);
+
+            if (userFile.UploadedById == _user.Id || userFile.IsPublic || userFile.SharedWithUsers.Any(c => c.SharedWithUserId == _user.Id))
+            {
+
+                var uploadsPath = Path.Combine(GetUserFilesPath(userFile.UploadedById));
+
+                string WithholderPath = uploadsPath;
+
+                if (!string.IsNullOrEmpty(userFile.FilePath))
+                {
+                    WithholderPath = $"{uploadsPath}{userFile.FilePath}";
+                }
+
+                var filePath = $"{WithholderPath}\\{userFile.Name}";
+
+                if (!System.IO.File.Exists(filePath))
+                    return NotFound("Not found.");
+
+                var fileBytes = System.IO.File.ReadAllBytes(filePath);
+                return File(fileBytes, "application/octet-stream", userFile.Name);
+            }
+            else
+            {
+                return Content("Fail");
+            }
+        }
+        [HttpPost]
+        public async Task<ActionResult> Share(string FileId, string Email, bool IsPublic, string? CurrentPath)
+        {
+            var file = await _userFile.GetFileWithDetails(new Guid(FileId));
+            var user = _userManager.Users
+                           .FirstOrDefault(user => user.Email == Email);
+
+            if (user != null)
+            {
+
+                if (!file.SharedWithUsers.Any(c => c.SharedWithUserId == user.Id))
+                    await _fileShare.NewFileShare(new FileShareDto()
+                    {
+                        SharedWithUserId = user.Id,
+                        UserFileId = file.Id
+                    });
+
+            }
+
+            if (file.IsPublic != IsPublic)
+            {
+                file.IsPublic = IsPublic;
+                await _userFile.ModifyAsync(file);
+            }
+
+
+
+            return Json(new { status = "ok" });
+
+
         }
 
         public IActionResult Privacy()

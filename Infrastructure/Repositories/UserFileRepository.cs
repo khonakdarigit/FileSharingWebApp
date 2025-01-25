@@ -22,6 +22,14 @@ namespace Infrastructure.Repositories
             _fileShareRep = fileShareRep;
         }
 
+        public async Task<UserFile> GetFileWithDetails(Guid id)
+        {
+            var query = await FindAsync(
+                          filter: c => c.Id == id,
+                          include: c => c.Include(c => c.SharedWithUsers));
+            return query;
+        }
+
         public async Task<IEnumerable<UserFile>> GetUserFileWithDetailsByUserId(string userId)
         {
             var query = await GetAllAsync(
@@ -29,6 +37,12 @@ namespace Infrastructure.Repositories
                 include: c => c.Include(c => c.SharedWithUsers));
 
             return query;
+        }
+
+        public async Task Modify(UserFile model)
+        {
+            Update(model);
+            await SaveChangesAsync();
         }
 
         public async Task<UserFile> New(UserFile model)

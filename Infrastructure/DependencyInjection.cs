@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Identity;
 using Application.Interface;
 using Application.Services;
 using Infrastructure.Services;
+using Application.DTOs.Config;
+using Mapster;
 
 namespace Infrastructure
 {
@@ -43,13 +45,18 @@ namespace Infrastructure
 
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
         {
+
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IUserFileRepository, UserFileRepository>();
             services.AddScoped<IFileShareRepository, FileShareRepository>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+            TypeAdapterConfig.GlobalSettings.Scan(typeof(MappingConfig).Assembly);
+
+
             services.AddScoped<IUserFileService, UserFileService>();
+            services.AddScoped<IFileShareService, FileShareService>();
 
             return services;
         }

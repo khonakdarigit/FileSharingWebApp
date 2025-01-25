@@ -11,9 +11,8 @@ namespace Application.DTOs
     {
         public Guid Id { get; set; }
         public Guid UserFileId { get; set; }
-        public UserFileDto UserFile { get; set; }
-
         public string SharedWithUserId { get; set; }
-        public ApplicationUser SharedWithUser { get; set; }
+        public ApplicationUserDto SharedWithUser { get; set; }
+
     }
 }
