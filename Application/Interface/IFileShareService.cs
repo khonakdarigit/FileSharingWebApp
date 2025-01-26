@@ -9,6 +9,7 @@ namespace Application.Interface
 {
     public interface IFileShareService
     {
+        Task Delete(FileShareDto item);
         Task<FileShareDto> NewFileShare(FileShareDto fileShareDto);
     }
 }

@@ -15,5 +15,6 @@ namespace Application.Interface
         Task<UserFileDto> GetFileWithDetails(Guid id);
         Task<IEnumerable<UserFileDto>> GetUserFileWithDetailsByUserId(string userId);
         Task ModifyAsync(UserFileDto file);
+        Task Delete(UserFileDto userFile);
     }
 }

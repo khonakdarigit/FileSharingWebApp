@@ -6,5 +6,7 @@ namespace Domain.Repositories
     {
         Task NewFileShare(FileShare fileShare);
         Task<IEnumerable<FileShare>> AllFileShareWithMe(string userId);
+        Task<FileShare> GetById(Guid id);
+        Task Delete(FileShare model);
     }
 }

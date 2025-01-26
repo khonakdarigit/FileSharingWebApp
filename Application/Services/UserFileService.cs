@@ -29,6 +29,9 @@ namespace Application.Services
         public async Task<IEnumerable<AccessFileDto>> AllFileShareWithMe(string userId)
         {
             var shareFiles = await _fileShareRep.AllFileShareWithMe(userId);
+
+            var publicFiles = await _userFilesRep.GetPublicFiles();
+
             var toAccessFile = shareFiles.Select(c => new AccessFileDto()
             {
                 UserFileId = c.UserFileId,
@@ -36,6 +39,8 @@ namespace Application.Services
                 UserName = c.UserFile.UploadedBy.UserName,
                 FileName = c.UserFile.Name,
             });
+
+
             return toAccessFile;
         }
 
@@ -56,6 +61,12 @@ namespace Application.Services
             UserFile userFile = await _userFilesRep.GetFileWithDetails(file.Id);
             userFile.IsPublic = file.IsPublic;
             await _userFilesRep.Modify(userFile);
+        }
+
+        public async Task Delete(UserFileDto file)
+        {
+            UserFile userFile = await _userFilesRep.GetFileWithDetails(file.Id);
+            await _userFilesRep.Delete(userFile);
         }
     }
 }

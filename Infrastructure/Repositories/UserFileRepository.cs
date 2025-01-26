@@ -34,7 +34,7 @@ namespace Infrastructure.Repositories
         {
             var query = await GetAllAsync(
                 filter: c => c.UploadedById == userId,
-                include: c => c.Include(c => c.SharedWithUsers));
+                include: c => c.Include(c => c.SharedWithUsers).ThenInclude(c=>c.SharedWithUser));
 
             return query;
         }
@@ -50,6 +50,12 @@ namespace Infrastructure.Repositories
             await AddAsync(model);
             await SaveChangesAsync();
             return model;
+        }
+
+        public async Task Delete(UserFile userFile)
+        {
+            Remove(userFile);
+            await SaveChangesAsync();
         }
     }
 }

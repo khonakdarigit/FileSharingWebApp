@@ -13,6 +13,11 @@ namespace Domain.Entities
         public UserFile UserFile { get; set; }
 
         public string SharedWithUserId { get; set; } 
-        public ApplicationUser SharedWithUser { get; set; } 
+        public ApplicationUser SharedWithUser { get; set; }
+
+        public static implicit operator FileShare(UserFile v)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

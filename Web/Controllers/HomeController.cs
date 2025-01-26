@@ -47,7 +47,7 @@ namespace Web.Controllers
                 return Ok(new List<string>());
 
             var users = _userManager.Users
-                .Where(user => user.Email.Contains(query))
+                .Where(user => user.Id != _user.Id && user.Email.Contains(query))
                 .Select(user => user.Email)
                 .ToList();
 
@@ -78,6 +78,7 @@ namespace Web.Controllers
                 {
                     directories = Directory.GetDirectories($"{uploadsPath}").ToList();
                 }
+
                 var FolderNames = new List<string>();
                 foreach (var item in directories)
                 {
@@ -91,7 +92,7 @@ namespace Web.Controllers
 
                 list = list.Where(c => (string.IsNullOrEmpty(c.FilePath) && string.IsNullOrWhiteSpace(CurrentPath)) || c.FilePath == CurrentPath).OrderByDescending(c => c.Id);
 
-                ViewBag.AllFileShareWithMe = await _userFile.AllFileShareWithMe(_user.Id);
+                ViewBag.AllFileShareWithMe = (await _userFile.AllFileShareWithMe(_user.Id)).ToList();
 
                 return View(list);
             }
@@ -160,6 +161,85 @@ namespace Web.Controllers
             }
             return View(model);
         }
+
+        public async Task<IActionResult> DeleteFolder(string FolderName, string CurrentPath = "")
+        {
+            //CurrentPath = string.IsNullOrEmpty(CurrentPath) ? "\\" : CurrentPath;
+
+
+            var uploadsPath = Path.Combine(GetUserFilesPath(_user.Id));
+
+            uploadsPath = $"{uploadsPath}{CurrentPath}\\{FolderName}";
+
+            var list = await _userFile.GetUserFileWithDetailsByUserId(_user.Id);
+
+            var files = list.Where(c =>
+                c.UploadedById == _user.Id &&
+                c.FilePath != null &&
+                (c.FilePath == $"{CurrentPath}\\{FolderName}" || c.FilePath.StartsWith($"{CurrentPath}\\{FolderName}\\"))
+            ).ToList();
+
+
+            foreach (var file in files)
+            {
+                await DeleteUserFileAsync(file);
+            }
+
+            if (Directory.Exists(uploadsPath))
+            {
+                Directory.Delete(uploadsPath, true);
+            }
+
+            return RedirectToAction("Index", new { CurrentPath = CurrentPath });
+        }
+
+        public async Task<IActionResult> Delete(Guid Id)
+        {
+
+            var userFile = await _userFile.GetFileWithDetails(Id);
+
+
+            if (
+                userFile.UploadedById == _user.Id)
+            {
+
+                await DeleteUserFileAsync(userFile);
+
+                return RedirectToAction(nameof(Index), new { CurrentPath = userFile.FilePath });
+            }
+            else
+            {
+                return Content("Fail");
+            }
+        }
+        private async Task DeleteUserFileAsync(UserFileDto userFile)
+        {
+            var uploadsPath = Path.Combine(GetUserFilesPath(userFile.UploadedById));
+
+            string WithFolderPath = uploadsPath;
+
+            if (!string.IsNullOrEmpty(userFile.FilePath))
+            {
+                WithFolderPath = $"{uploadsPath}{userFile.FilePath}";
+            }
+
+            var filePath = Path.Combine(WithFolderPath, userFile.Name);
+
+            if (!System.IO.File.Exists(filePath))
+                return;
+
+
+            var fileShareList = userFile.SharedWithUsers.ToList();
+            foreach (var item in fileShareList)
+            {
+                await _fileShare.Delete(item);
+            }
+            await _userFile.Delete(userFile);
+
+            System.IO.File.Delete(filePath);
+        }
+
+
         public async Task<IActionResult> DownloadFile(Guid Id)
         {
             //UserFile userFile = new UserFile();
@@ -222,6 +302,22 @@ namespace Web.Controllers
 
 
         }
+        [HttpPost]
+        public async Task<ActionResult> DeletePerson(string Id)
+        {
+            var list = await _userFile.GetUserFileWithDetailsByUserId(_user.Id);
+            var fileShare = list.SelectMany(c => c.SharedWithUsers).FirstOrDefault(c => c.Id == new Guid(Id));
+
+
+            if (fileShare != null)
+            {
+                await _fileShare.Delete(fileShare);
+                return Json(new { status = "ok" });
+
+            }
+            return Json(new { status = "fail" });
+        }
+
 
         public IActionResult Privacy()
         {

@@ -110,7 +110,7 @@
                     </span>
 
                 </div>
-                <div class="table-responsive">
+                <div class="table-responsive" style="overflow:visible">
                     <table class="table">
                         <thead>
                             <tr>
@@ -142,7 +142,7 @@
                                     </td>
                                     <td>
                                         <div style="text-align:center">
-                                            <a class="btn btn-default" asp-controller="FileManagement" asp-action="DeleteFolder"
+                                            <a class="btn btn-default" asp-action="DeleteFolder"
                                                asp-route-FolderName="@item"
                                                asp-route-CurrentPath="@ViewBag.CurrentPath">
                                                 <i class="bi bi-folder-x"></i>
@@ -178,7 +178,7 @@
                                         }
                                     </td>
                                     <td>
-                                        <div>
+                                        <div style="text-align:center">
                                             @{
                                                 var modalId = $"fileDetails_{@item.Id}";
                                                 var inputFieldId = $"emailInput_{@item.Id}";
@@ -187,19 +187,21 @@
                                             }
 
                                             <!-- Example split danger button -->
-                                            <div class="btn-group" style="text-align:center">
+                                            <div class="btn-group">
                                                 <a class="btn" data-bs-toggle="dropdown" aria-expanded="false">
                                                     <span>...</span>
                                                 </a>
                                                 <ul class="dropdown-menu">
                                                     <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#@modalId">Share</a></li>
                                                     <li><hr class="dropdown-divider"></li>
-                                                    <li><a class="dropdown-item" href="#" style="color:red">Remove</a></li>
+                                                    <li>
+                                                        <a class="dropdown-item" asp-action="Delete" asp-route-Id="@item.Id" style="color:red">Remove</a>
+                                                    </li>
                                                 </ul>
                                             </div>
 
                                             <!-- Modal -->
-                                            <div class="modal fade" id="@modalId" tabindex="-1" aria-labelledby="@($"{modalId}Label")" aria-hidden="true">
+                                            <div style="text-align:left" class="modal fade" id="@modalId" tabindex="-1" aria-labelledby="@($"{modalId}Label")" aria-hidden="true">
                                                 <div class="modal-dialog">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
@@ -225,9 +227,11 @@
                                                                     </h6>
                                                                     @foreach (var itemx in item.SharedWithUsers)
                                                                     {
-                                                                        <p>
+                                                                        var SharedWithUserId = $"SWU_{item.Id}";
+
+                                                                        <p id="@SharedWithUserId">
                                                                             @itemx.SharedWithUser.Email
-                                                                            <button class="btn" onclick="">
+                                                                            <button class="btn" type="button" onclick="deletePerson('@itemx.Id','@SharedWithUserId')">
                                                                                 <i class="bi bi-person-dash"></i>
                                                                             </button>
                                                                         </p>
@@ -291,7 +295,7 @@
                                 </td>
                                 <td>
                                     <div style="text-align:center">
-                                        <a class="btn btn-success" asp-controller="FileManagement" asp-action="DownloadFile"
+                                        <a class="btn btn-success" asp-action="DownloadFile"
                                            asp-route-Id="@item.UserFileId">
                                             <span>Download</span>
                                         </a>
@@ -389,12 +393,8 @@
 
 
         function doneShare(itemId) {
-
-            alert(itemId);
             var shareWithAll = document.querySelector(`#IsPublic_${itemId}`).checked;
             const emailInput = $(`#emailInput_${itemId}`);
-
-            alert(shareWithAll);
 
             $.ajax({
                 type: "Post",
@@ -415,6 +415,23 @@
 
         }
 
+        function deletePerson(id, itemboxId) {
+
+            var box = document.querySelector(`#${itemboxId}`);
+
+            $.ajax({
+                type: "Post",
+                url: '@Url.Action("DeletePerson", "Home")',
+                data: {
+                    'Id': id
+                }
+            }).done(function (result) {
+                if (result.status == 'ok') {
+                    box.remove();
+                }
+            });
+            
+        }
 
 
     </script>
