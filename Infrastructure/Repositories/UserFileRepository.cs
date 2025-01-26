@@ -57,5 +57,13 @@ namespace Infrastructure.Repositories
             Remove(userFile);
             await SaveChangesAsync();
         }
+
+        public async Task<IEnumerable<UserFile>> GetPublicFiles()
+        {
+            var list = await GetAllAsync(
+                c => c.IsPublic == true,
+                c=>c.Include(c=>c.UploadedBy));
+            return list;
+        }
     }
 }

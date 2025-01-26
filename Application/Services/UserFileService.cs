@@ -32,16 +32,27 @@ namespace Application.Services
 
             var publicFiles = await _userFilesRep.GetPublicFiles();
 
+
+
             var toAccessFile = shareFiles.Select(c => new AccessFileDto()
             {
                 UserFileId = c.UserFileId,
                 UserId = c.UserFile.UploadedById,
                 UserName = c.UserFile.UploadedBy.UserName,
                 FileName = c.UserFile.Name,
+            }).ToList();
+
+            var pubAccessFile = publicFiles.Where(c => c.UploadedById != userId).Select(c => new AccessFileDto()
+            {
+                UserFileId = c.Id,
+                UserId = c.UploadedById,
+                UserName = c.UploadedBy.UserName,
+                FileName = c.Name
             });
 
+            toAccessFile.AddRange(pubAccessFile);
 
-            return toAccessFile;
+            return toAccessFile.OrderBy(c => c.UserFileId);
         }
 
         public async Task<UserFileDto> GetFileWithDetails(Guid id)

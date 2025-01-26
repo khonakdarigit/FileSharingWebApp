@@ -15,5 +15,6 @@ namespace Domain.Repositories
         Task<UserFile> GetFileWithDetails(Guid id);
         Task Modify(UserFile model);
         Task Delete(UserFile model);
+        Task<IEnumerable<UserFile>> GetPublicFiles();
     }
 }

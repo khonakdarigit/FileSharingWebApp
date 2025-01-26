@@ -19,6 +19,12 @@
 <div class="text-center">
     <h1 class="display-4">File Sharing</h1>
     <p>Management file and sharing</p>
+    @if (!User.Identity.IsAuthenticated)
+    {
+        <p>
+            <a asp-area="Identity" asp-page="/Account/Login">login</a> or <a asp-area="Identity" asp-page="/Account/Register">register</a>
+        </p>
+    }
 </div>
 
 @if (User.Identity.IsAuthenticated)
@@ -245,7 +251,7 @@
 
                                                                     <div class="form-check form-switch">
                                                                         <input class="form-check-input" type="checkbox" role="switch" id="IsPublic_@item.Id" @(item.IsPublic ? "checked" : "")>
-                                                                        <label class="form-check-label" for="IsPublic">Share with all user</label>
+                                                                        <label class="form-check-label" for="IsPublic">Share with all users</label>
                                                                     </div>
 
 
@@ -430,7 +436,7 @@
                     box.remove();
                 }
             });
-            
+
         }
 
 
