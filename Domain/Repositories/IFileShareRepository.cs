@@ -1,12 +1,10 @@
-﻿using FileShare = Domain.Entities.FileShare;
+﻿using Domain.Repositories.Common;
+using FileShare = Domain.Entities.FileShare;
 
 namespace Domain.Repositories
 {
-    public interface IFileShareRepository
+    public interface IFileShareRepository : IRepository<FileShare>
     {
-        Task NewFileShare(FileShare fileShare);
         Task<IEnumerable<FileShare>> AllFileShareWithMe(string userId);
-        Task<FileShare> GetById(Guid id);
-        Task Delete(FileShare model);
     }
 }

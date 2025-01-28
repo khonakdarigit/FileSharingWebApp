@@ -1,15 +1,8 @@
 ﻿using Application.DTOs;
 using Application.Interface;
-using Domain.Entities;
 using Domain.Repositories;
-using Domain.Repositories.Common;
 using Mapster;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FileShare = Domain.Entities.FileShare;
+
 
 namespace Application.Services
 {
@@ -23,18 +16,20 @@ namespace Application.Services
             _fileShareRep = fileShareRep;
         }
 
-        public async Task<FileShareDto> NewFileShare(FileShareDto fileShareDto)
+        public async Task<FileShareDto> AddFileShare(FileShareDto fileShareDto)
         {
             var model = fileShareDto.Adapt<Domain.Entities.FileShare>();
-            await _fileShareRep.NewFileShare(model);
+            await _fileShareRep.AddAsync(model);
+            await _fileShareRep.SaveChangesAsync();
             fileShareDto.Id = model.Id;
             return fileShareDto;
         }
 
-        public async Task Delete(FileShareDto fileShare)
+        public async Task DeleteFileShare(FileShareDto fileShare)
         {
-            var model = await _fileShareRep.GetById(fileShare.Id);
-            await _fileShareRep.Delete(model);
+            var model = await _fileShareRep.GetByIdAsync(fileShare.Id);
+            _fileShareRep.Remove(model);
+            await _fileShareRep.SaveChangesAsync();
         }
     }
 }

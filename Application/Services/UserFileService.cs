@@ -3,7 +3,6 @@ using Application.Interface;
 using Domain.Entities;
 using Domain.Repositories;
 using Mapster;
-using FileShare = Domain.Entities.FileShare;
 
 namespace Application.Services
 {
@@ -20,10 +19,11 @@ namespace Application.Services
             _fileShareRep = fileShareRep;
         }
 
-        public async Task NewAsync(UserFileDto userFile)
+        public async Task AddUserFileAsync(UserFileDto userFile)
         {
             var model = userFile.Adapt<UserFile>();
-            await _userFilesRep.New(model);
+            await _userFilesRep.AddAsync(model);
+            await _userFilesRep.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<AccessFileDto>> AllFileShareWithMe(string userId)
@@ -67,17 +67,19 @@ namespace Application.Services
             return userFiles.Adapt<IEnumerable<UserFileDto>>();
         }
 
-        public async Task ModifyAsync(UserFileDto file)
+        public async Task UpdateUserFileAsync(UserFileDto file)
         {
             UserFile userFile = await _userFilesRep.GetFileWithDetails(file.Id);
             userFile.IsPublic = file.IsPublic;
-            await _userFilesRep.Modify(userFile);
+            _userFilesRep.Update(userFile);
+            await _userFilesRep.SaveChangesAsync();
         }
 
-        public async Task Delete(UserFileDto file)
+        public async Task DeleteUserFileAsync(UserFileDto file)
         {
             UserFile userFile = await _userFilesRep.GetFileWithDetails(file.Id);
-            await _userFilesRep.Delete(userFile);
+            _userFilesRep.Remove(userFile);
+            await _userFilesRep.SaveChangesAsync();
         }
     }
 }

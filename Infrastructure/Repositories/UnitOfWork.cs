@@ -2,7 +2,6 @@
 using Domain.Repositories;
 using Infrastructure.Repositories.Common;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.EntityFrameworkCore;
 using Infrastructure.Data;
 
 namespace Infrastructure.Repositories

@@ -13,7 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "Infrastru
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Presentation", "Presentation", "{EDD27CB5-9A50-43A5-8452-3BC782F1137E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Web", "Web\Web.csproj", "{0E3EFDE6-49E6-4E3D-B7C8-D24A3B198B69}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web", "Web\Web.csproj", "{0E3EFDE6-49E6-4E3D-B7C8-D24A3B198B69}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{827277F2-DD3D-4035-95A6-A8B658EF4048}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

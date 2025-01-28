@@ -131,7 +131,7 @@ namespace Web.Controllers
                 await file.CopyToAsync(stream);
             }
 
-            await _userFile.NewAsync(new UserFileDto()
+            await _userFile.AddUserFileAsync(new UserFileDto()
             {
                 UploadedById = _user.Id,
                 Name = file.FileName,
@@ -232,9 +232,9 @@ namespace Web.Controllers
             var fileShareList = userFile.SharedWithUsers.ToList();
             foreach (var item in fileShareList)
             {
-                await _fileShare.Delete(item);
+                await _fileShare.DeleteFileShare(item);
             }
-            await _userFile.Delete(userFile);
+            await _userFile.DeleteUserFileAsync(userFile);
 
             System.IO.File.Delete(filePath);
         }
@@ -282,7 +282,7 @@ namespace Web.Controllers
             {
 
                 if (!file.SharedWithUsers.Any(c => c.SharedWithUserId == user.Id))
-                    await _fileShare.NewFileShare(new FileShareDto()
+                    await _fileShare.AddFileShare(new FileShareDto()
                     {
                         SharedWithUserId = user.Id,
                         UserFileId = file.Id
@@ -293,7 +293,7 @@ namespace Web.Controllers
             if (file.IsPublic != IsPublic)
             {
                 file.IsPublic = IsPublic;
-                await _userFile.ModifyAsync(file);
+                await _userFile.UpdateUserFileAsync(file);
             }
 
 
@@ -311,7 +311,7 @@ namespace Web.Controllers
 
             if (fileShare != null)
             {
-                await _fileShare.Delete(fileShare);
+                await _fileShare.DeleteFileShare(fileShare);
                 return Json(new { status = "ok" });
 
             }
